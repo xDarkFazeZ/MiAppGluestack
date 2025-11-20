@@ -1,7 +1,9 @@
+// src/navigation/AppNavigator.js
 import { Box, HStack, Icon, Pressable, Text, VStack } from '@gluestack-ui/themed';
 import { createDrawerNavigator, DrawerContentScrollView } from '@react-navigation/drawer';
-import { NavigationContainer } from '@react-navigation/native';
-import { Home, Menu, Settings, ShoppingBag, Star, User } from 'lucide-react-native';
+import { signOut } from 'firebase/auth';
+import { Home, LogOut, Menu, Settings, ShoppingBag, Star, User } from 'lucide-react-native';
+import { auth } from '../firebase/firebaseConfig';
 
 // Importar pantallas
 import CustomComponentScreen from '../screens/CustomComponentScreen';
@@ -13,35 +15,73 @@ import ProfileScreen from '../screens/ProfileScreen';
 const Drawer = createDrawerNavigator();
 
 // Custom Header Component con ícono de menú
-const CustomHeader = ({ title, navigation }) => (
-  <Box
-    bg="$primary600"
-    pt="$12" // Padding top para evitar la barra de notificaciones
-    pb="$3"
-    px="$3"
-    alignItems="center"
-    justifyContent="center"
-    flexDirection="row"
-  >
-    {/* Ícono del menú a la izquierda */}
-    <Pressable 
-      onPress={() => navigation.openDrawer()}
-      position="absolute"
-      left="$3"
-      top="$12"
-      p="$2"
+const CustomHeader = ({ title, navigation }) => {
+  const user = auth.currentUser;
+  
+  // Función para obtener nombre del usuario
+  const getUserDisplayName = () => {
+    if (!user) return 'Usuario';
+    if (user.displayName) return user.displayName;
+    if (user.email) {
+      const emailParts = user.email.split('@');
+      const username = emailParts[0];
+      return username.charAt(0).toUpperCase() + username.slice(1);
+    }
+    return 'Usuario';
+  };
+
+  return (
+    <Box
+      bg="$primary600"
+      pt="$12"
+      pb="$3"
+      px="$3"
+      alignItems="center"
+      justifyContent="center"
+      flexDirection="row"
     >
-      <Icon as={Menu} size="xl" color="$white" />
-    </Pressable>
-    
-    <Text color="$white" fontWeight="bold" size="lg">
-      {title} - Juan Iram Gámez
-    </Text>
-  </Box>
-);
+      {/* Ícono del menú a la izquierda */}
+      <Pressable 
+        onPress={() => navigation.openDrawer()}
+        position="absolute"
+        left="$3"
+        top="$12"
+        p="$2"
+      >
+        <Icon as={Menu} size="xl" color="$white" />
+      </Pressable>
+      
+      <Text color="$white" fontWeight="bold" size="lg">
+        {title} - {getUserDisplayName()}
+      </Text>
+    </Box>
+  );
+};
 
 // Custom Drawer Content
 const CustomDrawerContent = (props) => {
+  const user = auth.currentUser;
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
+  };
+
+  // Función para obtener nombre amigable
+  const getUserDisplayName = () => {
+    if (!user) return 'Usuario';
+    if (user.displayName) return user.displayName;
+    if (user.email) {
+      const emailParts = user.email.split('@');
+      const username = emailParts[0];
+      return username.charAt(0).toUpperCase() + username.slice(1);
+    }
+    return 'Usuario';
+  };
+
   const menuItems = [
     { label: 'Inicio', icon: Home, screen: 'Inicio' },
     { label: 'Display', icon: ShoppingBag, screen: 'Display' },
@@ -59,7 +99,10 @@ const CustomDrawerContent = (props) => {
             Mi App Gluestack
           </Text>
           <Text color="$textDark500">
-            Juan Iram Gámez
+            {getUserDisplayName()}
+          </Text>
+          <Text color="$textDark400" size="sm">
+            {user?.email}
           </Text>
         </Box>
 
@@ -94,6 +137,22 @@ const CustomDrawerContent = (props) => {
           ))}
         </VStack>
 
+        {/* Botón de logout en el drawer */}
+        <Pressable
+          onPress={handleLogout}
+          mx="$2"
+          borderRadius="$md"
+          bg="$red100"
+          mt="$4"
+        >
+          <HStack space="md" alignItems="center" p="$3">
+            <Icon as={LogOut} size="lg" color="$red600" />
+            <Text color="$red600" fontWeight="bold">
+              Cerrar Sesión
+            </Text>
+          </HStack>
+        </Pressable>
+
         {/* Footer del Drawer */}
         <Box px="$4" pt="$4" borderTopWidth={1} borderTopColor="$borderLight300">
           <Text color="$textDark500" size="sm" textAlign="center">
@@ -107,27 +166,25 @@ const CustomDrawerContent = (props) => {
 
 const AppNavigator = () => {
   return (
-    <NavigationContainer>
-      <Drawer.Navigator
-        drawerContent={(props) => <CustomDrawerContent {...props} />}
-        screenOptions={({ navigation, route }) => ({
-          header: () => <CustomHeader title={route.name} navigation={navigation} />,
-          drawerActiveTintColor: '#6366f1',
-          drawerInactiveTintColor: '#6b7280',
-          drawerStyle: {
-            width: 280,
-          },
-          swipeEnabled: true,
-          gestureEnabled: true,
-        })}
-      >
-        <Drawer.Screen name="Inicio" component={MainScreen} />
-        <Drawer.Screen name="Display" component={DisplayScreen} />
-        <Drawer.Screen name="Perfil" component={ProfileScreen} />
-        <Drawer.Screen name="Formularios" component={FormsScreen} />
-        <Drawer.Screen name="Curiosidades" component={CustomComponentScreen} />
-      </Drawer.Navigator>
-    </NavigationContainer>
+    <Drawer.Navigator
+      drawerContent={(props) => <CustomDrawerContent {...props} />}
+      screenOptions={({ navigation, route }) => ({
+        header: () => <CustomHeader title={route.name} navigation={navigation} />,
+        drawerActiveTintColor: '#6366f1',
+        drawerInactiveTintColor: '#6b7280',
+        drawerStyle: {
+          width: 280,
+        },
+        swipeEnabled: true,
+        gestureEnabled: true,
+      })}
+    >
+      <Drawer.Screen name="Inicio" component={MainScreen} />
+      <Drawer.Screen name="Display" component={DisplayScreen} />
+      <Drawer.Screen name="Perfil" component={ProfileScreen} />
+      <Drawer.Screen name="Formularios" component={FormsScreen} />
+      <Drawer.Screen name="Curiosidades" component={CustomComponentScreen} />
+    </Drawer.Navigator>
   );
 };
 

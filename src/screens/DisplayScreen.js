@@ -1,3 +1,4 @@
+// src/screens/DisplayScreen.js
 import {
   Box,
   Button,
@@ -104,182 +105,196 @@ const DisplayScreen = () => {
   };
 
   return (
-    <ScrollView flex={1} bg="$backgroundLight0" pt="$16">
-      <VStack space="lg" p="$4">
-        
-        {/* Imagen rectangular tipo supermercado */}
-        <Box alignItems="center" mb="$4">
-          <Image
-            source={{
-              uri: 'https://images.unsplash.com/photo-1607082350899-7e105aa886ae?w=400&h=200&fit=crop',
-            }}
-            alt="Supermercado"
-            width={350}
-            height={150}
-            borderRadius="$lg"
-            borderWidth={2}
-            borderColor="$primary200"
-          />
-          <Text size="xl" fontWeight="bold" color="$primary600" mt="$2">
-            ¡Bienvenido a SuperTienda!
-          </Text>
-          <Text color="$textDark500" textAlign="center" mt="$1">
-            Los mejores precios y productos de calidad
-          </Text>
-        </Box>
-
-        {/* Botones */}
-        <HStack space="md" justifyContent="center">
-          <Button 
-            variant="solid" 
-            action="primary"
-            onPress={handleAddToCart}
-            isDisabled={!selectedProduct}
-          >
-            <ButtonText>Add to cart</ButtonText>
-          </Button>
+    <Box flex={1} bg="$backgroundLight0">
+      <ScrollView flex={1} contentContainerStyle={{ flexGrow: 1 }}>
+        <VStack space="lg" p="$4" pb="$8">
           
-          <Button 
-            variant="outline" 
-            action="secondary"
-            onPress={handleWishlistButton}
-            isDisabled={wishlistItems.length === 0}
-          >
-            <ButtonText>
-              {showWishlist ? 'Mostrar Todos' : 'Wishlist'}
-            </ButtonText>
-          </Button>
-        </HStack>
+          {/* Header con imagen */}
+          <Box alignItems="center" mt="$4" mb="$2">
+            <Image
+              source={{
+                uri: 'https://images.unsplash.com/photo-1607082350899-7e105aa886ae?w=400&h=200&fit=crop',
+              }}
+              alt="Supermercado"
+              width="100%"
+              height={120}
+              borderRadius="$lg"
+              borderWidth={1}
+              borderColor="$primary200"
+            />
+            <Text fontSize="$xl" fontWeight="$bold" color="$primary600" mt="$3" textAlign="center">
+              ¡Bienvenido a SuperTienda!
+            </Text>
+            <Text color="$textDark500" textAlign="center" mt="$1" fontSize="$sm">
+              Los mejores precios y productos de calidad
+            </Text>
+          </Box>
 
-        {/* Información del modo actual */}
-        <Box bg="$primary50" p="$3" borderRadius="$lg" alignItems="center">
-          <Text color="$primary700" fontWeight="medium">
-            {showWishlist 
-              ? <Text>📋 Mostrando productos de Wishlist ({wishlistItems.length} favoritos)</Text>
-              : <Text>📋 Todos los productos disponibles</Text>
-            }
-          </Text>
-        </Box>
+          {/* Botones de acción */}
+          <HStack space="md" justifyContent="center" mb="$2">
+            <Button 
+              variant="solid" 
+              action="primary"
+              onPress={handleAddToCart}
+              isDisabled={!selectedProduct}
+              size="md"
+              flex={1}
+            >
+              <ButtonText fontSize="$sm">Agregar al carrito</ButtonText>
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              action="secondary"
+              onPress={handleWishlistButton}
+              isDisabled={wishlistItems.length === 0}
+              size="md"
+              flex={1}
+            >
+              <ButtonText fontSize="$sm">
+                {showWishlist ? 'Mostrar Todos' : 'Wishlist'}
+              </ButtonText>
+            </Button>
+          </HStack>
 
-        {/* Tabla de productos */}
-        <Card p="$4" borderRadius="$lg" borderWidth={1} borderColor="$borderLight200">
-          <VStack space="md">
-            {/* Encabezados de tabla */}
-            <HStack justifyContent="space-between" borderBottomWidth={1} borderBottomColor="$borderLight300" pb="$2">
-              <Text fontWeight="bold" width="20%">Pro</Text>
-              <Text fontWeight="bold" width="20%">Size</Text>
-              <Text fontWeight="bold" width="20%">Ava</Text>
-              <Text fontWeight="bold" width="20%">ST</Text>
-              <Text fontWeight="bold" width="20%"></Text> {/* Columna estrella */}
-            </HStack>
-
-            {/* Mensaje cuando no hay productos en wishlist */}
-            {showWishlist && wishlistProducts.length === 0 && (
-              <Box py="$8" alignItems="center">
-                <Text color="$textDark500" textAlign="center">
-                  No hay productos en tu wishlist{'\n'}
-                  <Text size="sm">Toca las estrellas para agregar productos</Text>
-                </Text>
-              </Box>
-            )}
-
-            {/* Filas de productos */}
-            {productsToShow.map((product) => (
-              <Pressable 
-                key={product.id} 
-                onPress={() => setSelectedProduct(product)}
-              >
-                <HStack 
-                  justifyContent="space-between" 
-                  py="$3" 
-                  borderBottomWidth={1} 
-                  borderBottomColor="$borderLight100"
-                  bg={selectedProduct?.id === product.id ? "$primary50" : "transparent"}
-                  borderRadius="$md"
-                  px="$2"
-                >
-                  <Text width="20%" fontWeight="medium">{product.name}</Text>
-                  <Text width="20%">{product.size}</Text>
-                  <Text width="20%">{product.available}</Text>
-                  
-                  {/* Columna ST - Solo soldout y carrito */}
-                  <Box width="20%">
-                    <HStack space="sm" alignItems="center">
-                      {product.stock === 0 && (
-                        <Box bg="$red500" px="$2" py="$1" borderRadius="$sm">
-                          <Text color="$white" size="xs" fontWeight="bold">Soldout</Text>
-                        </Box>
-                      )}
-                      {isProductInCart(product.id) && (
-                        <Text>🛒</Text>
-                      )}
-                    </HStack>
-                  </Box>
-
-                  {/* Columna estrella */}
-                  <Box width="20%" alignItems="center">
-                    <Pressable onPress={() => toggleWishlist(product.id)}>
-                      <Text size="xl">
-                        {isProductInWishlist(product.id) ? '⭐' : '☆'}
-                      </Text>
-                    </Pressable>
-                  </Box>
-                </HStack>
-              </Pressable>
-            ))}
-
-            <Text size="sm" color="$textDark500" textAlign="center" mt="$2">
+          {/* Información del modo actual */}
+          <Box bg="$primary50" p="$3" borderRadius="$lg" alignItems="center" mb="$2">
+            <Text color="$primary700" fontWeight="$medium" fontSize="$sm" textAlign="center">
               {showWishlist 
-                ? `Mostrando ${wishlistProducts.length} productos de tu wishlist`
-                : `Showing recent inventory • ${allProducts.length} products`
+                ? `📋 Mostrando productos de Wishlist (${wishlistItems.length} favoritos)`
+                : '📋 Todos los productos disponibles'
               }
             </Text>
-          </VStack>
-        </Card>
+          </Box>
 
-        {/* Información del producto seleccionado */}
-        {selectedProduct && (
-          <Card p="$4" bg="$success50" borderWidth={1} borderColor="$success200">
-            <VStack space="sm">
-              <Text fontWeight="bold" color="$success800">
-                Producto seleccionado:
-              </Text>
-              <Text color="$success700">
-                {selectedProduct.name} - {selectedProduct.size} - {selectedProduct.price}
-              </Text>
-              <Text color="$success600" size="sm">
-                Disponible: {selectedProduct.available} unidades
+          {/* Información del producto seleccionado - AHORA ARRIBA DE LA TABLA */}
+          {selectedProduct && (
+            <Card p="$3" bg="$success50" borderWidth={1} borderColor="$success200" mb="$2">
+              <VStack space="xs">
+                <Text fontWeight="$bold" color="$success800" fontSize="$sm">
+                  Producto seleccionado:
+                </Text>
+                <Text color="$success700" fontSize="$sm">
+                  {selectedProduct.name} - {selectedProduct.size} - {selectedProduct.price}
+                </Text>
+                <Text color="$success600" fontSize="$xs">
+                  Disponible: {selectedProduct.available} unidades
+                </Text>
+              </VStack>
+            </Card>
+          )}
+
+          {/* Tabla de productos */}
+          <Card p="$3" borderRadius="$lg" borderWidth={1} borderColor="$borderLight200" mb="$2">
+            <VStack space="md">
+              {/* Encabezados de tabla */}
+              <HStack justifyContent="space-between" borderBottomWidth={1} borderBottomColor="$borderLight300" pb="$2">
+                <Text fontWeight="$bold" width="20%" fontSize="$sm">Producto</Text>
+                <Text fontWeight="$bold" width="20%" fontSize="$sm">Talla</Text>
+                <Text fontWeight="$bold" width="20%" fontSize="$sm">Disp.</Text>
+                <Text fontWeight="$bold" width="20%" fontSize="$sm">Estado</Text>
+                <Text fontWeight="$bold" width="20%" fontSize="$sm" textAlign="center">Fav</Text>
+              </HStack>
+
+              {/* Mensaje cuando no hay productos en wishlist */}
+              {showWishlist && wishlistProducts.length === 0 && (
+                <Box py="$6" alignItems="center">
+                  <Text color="$textDark500" textAlign="center" fontSize="$sm">
+                    No hay productos en tu wishlist
+                  </Text>
+                  <Text color="$textDark400" textAlign="center" fontSize="$xs" mt="$1">
+                    Toca las estrellas para agregar productos
+                  </Text>
+                </Box>
+              )}
+
+              {/* Filas de productos */}
+              {productsToShow.map((product) => (
+                <Pressable 
+                  key={product.id} 
+                  onPress={() => setSelectedProduct(product)}
+                >
+                  <HStack 
+                    justifyContent="space-between" 
+                    py="$2" 
+                    borderBottomWidth={1} 
+                    borderBottomColor="$borderLight100"
+                    bg={selectedProduct?.id === product.id ? "$primary50" : "transparent"}
+                    borderRadius="$md"
+                    px="$1"
+                    alignItems="center"
+                  >
+                    <Text width="20%" fontWeight="$medium" fontSize="$sm">{product.name}</Text>
+                    <Text width="20%" fontSize="$sm">{product.size}</Text>
+                    <Text width="20%" fontSize="$sm">{product.available}</Text>
+                    
+                    {/* Columna Estado */}
+                    <Box width="20%">
+                      <HStack space="xs" alignItems="center">
+                        {product.stock === 0 ? (
+                          <Box bg="$red500" px="$1" py="$0.5" borderRadius="$xs">
+                            <Text color="$white" fontSize="$xs" fontWeight="$bold">Agotado</Text>
+                          </Box>
+                        ) : isProductInCart(product.id) ? (
+                          <Text fontSize="$sm">🛒</Text>
+                        ) : (
+                          <Text fontSize="$xs" color="$success600">Disponible</Text>
+                        )}
+                      </HStack>
+                    </Box>
+
+                    {/* Columna estrella */}
+                    <Box width="20%" alignItems="center">
+                      <Pressable onPress={() => toggleWishlist(product.id)} hitSlop={10}>
+                        <Text fontSize="$lg">
+                          {isProductInWishlist(product.id) ? '⭐' : '☆'}
+                        </Text>
+                      </Pressable>
+                    </Box>
+                  </HStack>
+                </Pressable>
+              ))}
+
+              {/* Footer de la tabla */}
+              <Text fontSize="$xs" color="$textDark500" textAlign="center" mt="$2">
+                {showWishlist 
+                  ? `Mostrando ${wishlistProducts.length} productos de tu wishlist`
+                  : `Mostrando inventario • ${allProducts.length} productos`
+                }
               </Text>
             </VStack>
           </Card>
-        )}
 
-        {/* Información del carrito */}
-        {cartItems.length > 0 && (
-          <Card p="$4" bg="$primary50" borderWidth={1} borderColor="$primary200">
-            <HStack alignItems="center" space="sm" justifyContent="center">
-              <Text>🛒</Text>
-              <Text color="$primary700" fontWeight="medium">
-                {cartItems.length} producto(s) en el carrito
-              </Text>
-            </HStack>
-          </Card>
-        )}
+          {/* Información del carrito */}
+          {cartItems.length > 0 && (
+            <Card p="$3" bg="$primary50" borderWidth={1} borderColor="$primary200" mb="$2">
+              <HStack alignItems="center" space="sm" justifyContent="center">
+                <Text>🛒</Text>
+                <Text color="$primary700" fontWeight="$medium" fontSize="$sm">
+                  {cartItems.length} producto(s) en el carrito
+                </Text>
+              </HStack>
+            </Card>
+          )}
 
-        {/* Información de wishlist */}
-        {wishlistItems.length > 0 && !showWishlist && (
-          <Card p="$4" bg="$warning50" borderWidth={1} borderColor="$warning200">
-            <HStack alignItems="center" space="sm" justifyContent="center">
-              <Text>⭐</Text>
-              <Text color="$warning700" fontWeight="medium">
-                {wishlistItems.length} producto(s) en wishlist
-              </Text>
-            </HStack>
-          </Card>
-        )}
+          {/* Información de wishlist */}
+          {wishlistItems.length > 0 && !showWishlist && (
+            <Card p="$3" bg="$warning50" borderWidth={1} borderColor="$warning200">
+              <HStack alignItems="center" space="sm" justifyContent="center">
+                <Text>⭐</Text>
+                <Text color="$warning700" fontWeight="$medium" fontSize="$sm">
+                  {wishlistItems.length} producto(s) en wishlist
+                </Text>
+              </HStack>
+            </Card>
+          )}
 
-      </VStack>
-    </ScrollView>
+          {/* Espacio extra al final para mejor scroll */}
+          <Box height="$4" />
+
+        </VStack>
+      </ScrollView>
+    </Box>
   );
 };
 
