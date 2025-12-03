@@ -1,5 +1,5 @@
-// src/screens/LoginScreen.js
-import {
+  // src/screens/LoginScreen.js
+  import {
   Alert,
   AlertText,
   Box,
@@ -17,316 +17,325 @@ import {
   Text,
   VStack
 } from '@gluestack-ui/themed';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { ref, set } from 'firebase/database';
-import { Lock, Mail, Shield, UserPlus } from 'lucide-react-native';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { Chrome, Lock, Mail, Shield, UserPlus } from 'lucide-react-native';
 import { useState } from 'react';
-import { auth, database } from '../firebase/firebaseConfig';
+import { useGoogleAuthSimple } from '../../hooks/useGoogleAuthSimple';
+import { auth } from '../firebase/firebaseConfig';
 
-const LoginScreen = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const LoginScreen = ({ navigation }) => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      setError('Por favor, completa todos los campos');
-      return;
-    }
+    // Usar el hook de Google Auth
+    const {
+      signInWithGoogle,
+      loading: googleLoading,
+      error: googleError
+    } = useGoogleAuthSimple(navigation);
 
-    setLoading(true);
-    setError('');
+    // Combinar errores
+    const displayError = error || googleError;
 
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (error) {
-      console.error('Error en login:', error);
-      setError(getErrorMessage(error.code));
-    } finally {
-      setLoading(false);
-    }
-  };
+    const handleLogin = async () => {
+      if (!email || !password) {
+        setError('Por favor, completa todos los campos');
+        return;
+      }
 
-  const handleCreateAccount = async () => {
-    if (!email || !password) {
-      setError('Por favor, ingresa email y contraseña');
-      return;
-    }
+      setLoading(true);
+      setError('');
 
-    if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres');
-      return;
-    }
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        // El listener en App.js se encargará de redirigir al MainScreen
+      } catch (error) {
+        console.error('Error en login:', error);
+        setError(getErrorMessage(error.code));
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    setLoading(true);
-    setError('');
+    const navigateToCreateAccount = () => {
+      navigation.navigate('Register');
+    };
 
-    try {
-      // 1. Crear usuario en Authentication
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+    const getErrorMessage = (errorCode) => {
+      switch (errorCode) {
+        case 'auth/invalid-email':
+          return 'Email inválido';
+        case 'auth/user-disabled':
+          return 'Usuario deshabilitado';
+        case 'auth/user-not-found':
+          return 'Usuario no encontrado';
+        case 'auth/wrong-password':
+          return 'Contraseña incorrecta';
+        case 'auth/email-already-in-use':
+          return 'Este email ya está registrado';
+        case 'auth/weak-password':
+          return 'La contraseña es muy débil';
+        case 'auth/network-request-failed':
+          return 'Error de conexión. Verifica tu internet';
+        case 'auth/too-many-requests':
+          return 'Demasiados intentos. Intenta más tarde';
+        default:
+          return 'Error: ' + errorCode;
+      }
+    };
 
-      // 2. Extraer firstname del email (parte antes del @)
-      const firstname = email.split('@')[0];
-      
-      // 3. Generar IP aleatoria
-      const generateRandomIP = () => {
-        return `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
-      };
+    // Estado de carga combinado
+    const isLoading = loading || googleLoading;
 
-      // 4. Generar ID único basado en timestamp
-      const id = Date.now();
+    return (
+      <ScrollView flex={1} bg="$backgroundLight0" contentContainerStyle={{ flexGrow: 1 }}>
+        <Center flex={1} p="$4" minHeight="100%">
+          <VStack space="xl" width="$full" maxWidth={400} alignItems="center">
 
-      // 5. Datos del usuario para Realtime Database
-      const userData = {
-        id: id,
-        first_name: firstname.charAt(0).toUpperCase() + firstname.slice(1), // Capitalizar
-        last_name: "Usuario", // Valor por defecto
-        email: email,
-        gender: "Not specified", // Valor por defecto
-        ip_address: generateRandomIP()
-      };
+            {/* Header */}
+            <Box alignItems="center" mt="$12" mb="$6">
+              <Box
+                bg="$primary600"
+                p="$6"
+                borderRadius="lg"
+                style={{
+                  shadowColor: "$primary600",
+                  shadowOffset: { width: 0, height: 8 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 12,
+                  elevation: 8,
+                }}
+              >
+                <Icon as={Shield} size="xl" color="$white" />
+              </Box>
 
-      // 6. Guardar en Realtime Database
-      await set(ref(database, 'users/' + user.uid), userData);
-      
-      console.log('Usuario creado exitosamente en Authentication y Realtime Database');
-      
-    } catch (error) {
-      console.error('Error creando cuenta:', error);
-      setError(getErrorMessage(error.code));
-    } finally {
-      setLoading(false);
-    }
-  };
+              <VStack alignItems="center" mt="$6" space="md">
+                <Text fontSize="$2xl" fontWeight="$bold" color="$textDark900" textAlign="center">
+                  Bienvenido
+                </Text>
+                <Text fontSize="$sm" color="$textDark600" textAlign="center" lineHeight="$md">
+                  Inicia sesión en tu cuenta
+                </Text>
+              </VStack>
+            </Box>
 
-  const getErrorMessage = (errorCode) => {
-    switch (errorCode) {
-      case 'auth/invalid-email':
-        return 'Email inválido';
-      case 'auth/user-disabled':
-        return 'Usuario deshabilitado';
-      case 'auth/user-not-found':
-        return 'Usuario no encontrado';
-      case 'auth/wrong-password':
-        return 'Contraseña incorrecta';
-      case 'auth/email-already-in-use':
-        return 'Este email ya está registrado';
-      case 'auth/weak-password':
-        return 'La contraseña es muy débil';
-      default:
-        return 'Error al crear la cuenta: ' + errorCode;
-    }
-  };
-
-  return (
-    <ScrollView flex={1} bg="$backgroundLight0">
-      <Center flex={1} p="$4" minHeight="100%">
-        <VStack space="xl" width="$full" maxWidth={400} alignItems="center">
-          
-          {/* Header moderno */}
-          <Box alignItems="center" mt="$16" mb="$8">
-            <Box 
-              bg="$primary600"
-              p="$6" 
+            {/* Tarjeta del formulario */}
+            <Box
+              width="$full"
+              bg="$white"
+              p="$5"
               borderRadius="lg"
               style={{
-                shadowColor: "$primary600",
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.3,
+                shadowColor: "$borderLight400",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.1,
                 shadowRadius: 12,
-                elevation: 8,
+                elevation: 4,
               }}
-            >
-              <Icon as={Shield} size="xl" color="$white" />
-            </Box>
-            
-            <VStack alignItems="center" mt="$8" space="md">
-              <Text fontSize="$3xl" fontWeight="$bold" color="$textDark900" textAlign="center">
-                Bienvenido
-              </Text>
-              <Text fontSize="$md" color="$textDark600" textAlign="center" lineHeight="$md">
-                Inicia sesión en tu cuenta
-              </Text>
-            </VStack>
-          </Box>
-
-          {/* Tarjeta del formulario */}
-          <Box 
-            width="$full" 
-            bg="$white" 
-            p="$6" 
-            borderRadius="lg"
-            style={{
-              shadowColor: "$borderLight400",
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.1,
-              shadowRadius: 12,
-              elevation: 4,
-            }}
-            borderWidth={1}
-            borderColor="$borderLight200"
-          >
-            <VStack space="xl">
-              
-              {/* Formulario mejorado */}
-              <VStack space="xl">
-                <FormControl>
-                  <FormControlLabel mb="$3">
-                    <FormControlLabelText fontSize="$md" fontWeight="$medium" color="$textDark700">
-                      Correo electrónico
-                    </FormControlLabelText>
-                  </FormControlLabel>
-                  <Input 
-                    size="lg" 
-                    variant="outline"
-                    borderColor="$borderLight300"
-                    borderRadius="$md"
-                    bg="$backgroundLight50"
-                    height="$12"
-                  >
-                    <Box width="$10" justifyContent="center" alignItems="center">
-                      <Icon as={Mail} size="md" color="$primary500" />
-                    </Box>
-                    <InputField 
-                      placeholder="tu@email.com"
-                      value={email}
-                      onChangeText={setEmail}
-                      autoCapitalize="none"
-                      keyboardType="email-address"
-                      fontSize="$md"
-                      flex={1}
-                    />
-                  </Input>
-                </FormControl>
-
-                <FormControl>
-                  <FormControlLabel mb="$3">
-                    <FormControlLabelText fontSize="$md" fontWeight="$medium" color="$textDark700">
-                      Contraseña
-                    </FormControlLabelText>
-                  </FormControlLabel>
-                  <Input 
-                    size="lg" 
-                    variant="outline"
-                    borderColor="$borderLight300"
-                    borderRadius="$md"
-                    bg="$backgroundLight50"
-                    height="$12"
-                  >
-                    <Box width="$10" justifyContent="center" alignItems="center">
-                      <Icon as={Lock} size="md" color="$primary500" />
-                    </Box>
-                    <InputField 
-                      placeholder="••••••••"
-                      value={password}
-                      onChangeText={setPassword}
-                      secureTextEntry
-                      fontSize="$md"
-                      flex={1}
-                    />
-                  </Input>
-                </FormControl>
-
-                {error ? (
-                  <Alert action="error" variant="solid" borderRadius="$md">
-                    <AlertText fontSize="$sm" fontWeight="$medium">
-                      {error}
-                    </AlertText>
-                  </Alert>
-                ) : null}
-
-                {/* Botones de acción */}
-                <VStack space="md" mt="$4">
-                  <Button 
-                    onPress={handleLogin} 
-                    disabled={loading} 
-                    size="lg"
-                    action="primary"
-                    borderRadius="$md"
-                    height="$12"
-                    style={{
-                      backgroundColor: '$primary600',
-                    }}
-                  >
-                    <ButtonText fontWeight="$bold" fontSize="$md">
-                      {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-                    </ButtonText>
-                  </Button>
-                  
-                  <Button 
-                    onPress={handleCreateAccount} 
-                    disabled={loading} 
-                    variant="outline" 
-                    size="lg"
-                    borderColor="$primary500"
-                    borderRadius="$md"
-                    height="$12"
-                  >
-                    <Icon as={UserPlus} size="md" mr="$3" color="$primary600" />
-                    <ButtonText fontWeight="$semibold" color="$primary600" fontSize="$md">
-                      {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
-                    </ButtonText>
-                  </Button>
-                </VStack>
-              </VStack>
-            </VStack>
-          </Box>
-
-          {/* Información adicional */}
-          <VStack space="lg" alignItems="center" mt="$8" width="$full">
-            
-            {/* Términos y condiciones */}
-            <Text color="$textDark500" fontSize="$sm" textAlign="center" lineHeight="$sm">
-              Al crear una cuenta aceptas nuestros{' '}
-              <Text color="$primary600" fontWeight="$medium" fontSize="$sm">
-                Términos y Condiciones
-              </Text>
-            </Text>
-
-            {/* Información de seguridad */}
-            <Box 
-              bg="$backgroundLight100" 
-              p="$4" 
-              borderRadius="$lg" 
-              width="$full"
               borderWidth={1}
               borderColor="$borderLight200"
             >
-              <HStack alignItems="center" space="sm" justifyContent="center">
-                <Icon as={Shield} size="sm" color="$success500" />
-                <Text color="$textDark600" fontSize="$sm" textAlign="center" flex={1}>
-                  Tus datos están protegidos con encriptación avanzada
-                </Text>
-              </HStack>
-            </Box>
+              <VStack space="lg">
 
-            {/* Información adicional de ayuda */}
-            <Box 
-              bg="$primary50" 
-              p="$4" 
-              borderRadius="$lg" 
-              width="$full"
-              borderWidth={1}
-              borderColor="$primary100"
-            >
-              <VStack space="xs" alignItems="center">
-                <Text color="$primary700" fontWeight="$bold" fontSize="$sm" textAlign="center">
-                  ¿Primera vez aquí?
-                </Text>
-                <Text color="$primary600" fontSize="$xs" textAlign="center">
-                  Crea una cuenta gratuita para comenzar
-                </Text>
+                {/* Botón de Google */}
+                <Button
+                  onPress={signInWithGoogle}
+                  disabled={isLoading}
+                  variant="outline"
+                  size="lg"
+                  borderColor="$borderLight300"
+                  borderRadius="$md"
+                  height="$12"
+                >
+                  <Icon as={Chrome} size="md" mr="$2" color="$red500" />
+                  <ButtonText fontWeight="$semibold" color="$textDark700" fontSize="$md">
+                    {googleLoading ? 'Conectando con Google...' : 'Continuar con Google'}
+                  </ButtonText>
+                </Button>
+
+                {/* Línea divisoria con texto */}
+                <Box
+                  width="$full"
+                  alignItems="center"
+                  my="$2"
+                >
+                  <Box
+                    width="$full"
+                    height="$px"
+                    bg="$borderLight300"
+                    position="absolute"
+                    top="50%"
+                  />
+                  <Box bg="$white" px="$2">
+                    <Text color="$textDark400" fontSize="$xs">
+                      o ingresa con email
+                    </Text>
+                  </Box>
+                </Box>
+
+                {/* Formulario de email/contraseña */}
+                <VStack space="lg">
+                  <FormControl>
+                    <FormControlLabel mb="$2">
+                      <FormControlLabelText fontSize="$sm" fontWeight="$medium" color="$textDark700">
+                        Correo electrónico
+                      </FormControlLabelText>
+                    </FormControlLabel>
+                    <Input
+                      size="md"
+                      variant="outline"
+                      borderColor="$borderLight300"
+                      borderRadius="$md"
+                      bg="$backgroundLight50"
+                      height="$11"
+                    >
+                      <Box width="$8" justifyContent="center" alignItems="center">
+                        <Icon as={Mail} size="sm" color="$primary500" />
+                      </Box>
+                      <InputField
+                        placeholder="tu@email.com"
+                        value={email}
+                        onChangeText={setEmail}
+                        autoCapitalize="none"
+                        keyboardType="email-address"
+                        fontSize="$sm"
+                        flex={1}
+                      />
+                    </Input>
+                  </FormControl>
+
+                  <FormControl>
+                    <FormControlLabel mb="$2">
+                      <FormControlLabelText fontSize="$sm" fontWeight="$medium" color="$textDark700">
+                        Contraseña
+                      </FormControlLabelText>
+                    </FormControlLabel>
+                    <Input
+                      size="md"
+                      variant="outline"
+                      borderColor="$borderLight300"
+                      borderRadius="$md"
+                      bg="$backgroundLight50"
+                      height="$11"
+                    >
+                      <Box width="$8" justifyContent="center" alignItems="center">
+                        <Icon as={Lock} size="sm" color="$primary500" />
+                      </Box>
+                      <InputField
+                        placeholder="••••••••"
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry
+                        fontSize="$sm"
+                        flex={1}
+                      />
+                    </Input>
+                  </FormControl>
+
+                  {displayError ? (
+                    <Alert action="error" variant="solid" borderRadius="$md" mt="$2">
+                      <AlertText fontSize="$xs" fontWeight="$medium">
+                        {displayError}
+                      </AlertText>
+                    </Alert>
+                  ) : null}
+
+                  {/* Botones de acción */}
+                  <VStack space="sm" mt="$3">
+                    <Button
+                      onPress={handleLogin}
+                      disabled={isLoading}
+                      size="md"
+                      action="primary"
+                      borderRadius="$md"
+                      height="$11"
+                    >
+                      <ButtonText fontWeight="$bold" fontSize="$sm">
+                        {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+                      </ButtonText>
+                    </Button>
+
+                    <Button
+                      onPress={navigateToCreateAccount}
+                      disabled={isLoading}
+                      variant="outline"
+                      size="md"
+                      borderColor="$primary500"
+                      borderRadius="$md"
+                      height="$11"
+                    >
+                      <Icon as={UserPlus} size="sm" mr="$2" color="$primary600" />
+                      <ButtonText fontWeight="$semibold" color="$primary600" fontSize="$sm">
+                        Crear Cuenta Nueva
+                      </ButtonText>
+                    </Button>
+                  </VStack>
+                </VStack>
               </VStack>
             </Box>
 
+            {/* Información adicional */}
+            <VStack space="md" alignItems="center" mt="$4" width="$full">
+              <Text color="$textDark500" fontSize="$xs" textAlign="center" lineHeight="$sm">
+                Al crear una cuenta aceptas nuestros{' '}
+                <Text color="$primary600" fontWeight="$medium" fontSize="$xs">
+                  Términos y Condiciones
+                </Text>
+              </Text>
+
+              <Box
+                bg="$backgroundLight100"
+                p="$3"
+                borderRadius="$lg"
+                width="$full"
+                borderWidth={1}
+                borderColor="$borderLight200"
+              >
+                <HStack alignItems="center" space="sm" justifyContent="center">
+                  <Icon as={Shield} size="xs" color="$success500" />
+                  <Text color="$textDark600" fontSize="$xs" textAlign="center" flex={1}>
+                    Tus datos están protegidos con encriptación
+                  </Text>
+                </HStack>
+              </Box>
+
+              {/* Footer moderno - ¿Ya tienes cuenta? */}
+              <Box
+                mt="$4"
+                p="$4"
+                bg="$primary50"
+                borderRadius="$lg"
+                width="$full"
+                borderWidth={1}
+                borderColor="$primary100"
+              >
+                <HStack alignItems="center" justifyContent="center" space="sm">
+                  <Text color="$primary700" fontSize="$sm" fontWeight="medium">
+                    ¿No tienes cuenta?
+                  </Text>
+                  <Button
+                    variant="link"
+                    onPress={() => navigation.navigate('Register')}
+                    p="$1"
+                  >
+                    <ButtonText
+                      color="$primary600"
+                      fontSize="$sm"
+                      fontWeight="bold"
+                      textDecorationLine="underline"
+                    >
+                      Regístrate aquí
+                    </ButtonText>
+                  </Button>
+                </HStack>
+              </Box>
+            </VStack>
           </VStack>
+        </Center>
+      </ScrollView>
+    );
+  };
 
-        </VStack>
-      </Center>
-    </ScrollView>
-  );
-};
-
-export default LoginScreen;
+  export default LoginScreen;

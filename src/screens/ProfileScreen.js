@@ -1,31 +1,34 @@
+// src/screens/ProfileScreen.js
 import {
-    Avatar,
-    AvatarFallbackText,
-    AvatarImage,
-    Box,
-    Divider,
-    HStack,
-    Icon,
-    Image,
-    Modal,
-    ModalBackdrop,
-    ModalBody,
-    ModalContent,
-    Pressable,
-    ScrollView,
-    Text,
-    VStack
+  Avatar,
+  AvatarFallbackText,
+  AvatarImage,
+  Box,
+  Divider,
+  HStack,
+  Icon,
+  Image,
+  Modal,
+  ModalBackdrop,
+  ModalBody,
+  ModalContent,
+  Pressable,
+  ScrollView,
+  Text,
+  VStack
 } from '@gluestack-ui/themed';
 import * as ImagePicker from 'expo-image-picker';
 import {
-    Camera,
-    Grid3X3,
-    Heart,
-    MapPin,
+  Camera,
+  Grid3X3,
+  Heart,
+  MapPin,
 } from 'lucide-react-native';
 import { useState } from 'react';
+import { useUserProfile } from '../../hooks/useUserProfile';
 
 const ProfileScreen = () => {
+  const { getDisplayName, getFullName, userData, email } = useUserProfile();
   const [profileImage, setProfileImage] = useState(null);
   const [activeTab, setActiveTab] = useState('gallery');
   const [selectedImage, setSelectedImage] = useState(null);
@@ -93,7 +96,7 @@ const ProfileScreen = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ flexGrow: 1 }}
       >
-        {/* Header con imagen de portada - HACE SCROLL DESDE ARRIBA */}
+        {/* Header con imagen de portada */}
         <Box position="relative" h={200}>
           <Image
             w="$full"
@@ -113,7 +116,7 @@ const ProfileScreen = () => {
             {/* Avatar con botón de cámara */}
             <Pressable onPress={pickImage} position="relative">
               <Avatar size="2xl" borderWidth={4} borderColor="$white">
-                <AvatarFallbackText>Juan Iram Gámez</AvatarFallbackText>
+                <AvatarFallbackText>{getDisplayName()}</AvatarFallbackText>
                 <AvatarImage
                   alt="Avatar del usuario"
                   source={{ 
@@ -137,21 +140,28 @@ const ProfileScreen = () => {
           </Box>
         </Box>
 
-        {/* Contenido principal - TODO HACE SCROLL JUNTO */}
+        {/* Contenido principal */}
         <Box flex={1} mt={60} p="$4" pb="$8">
           
           {/* Información del usuario */}
           <VStack space="md" alignItems="center" mb="$6">
             <Text fontWeight="bold" size="2xl" color="$textDark800">
-              Juan Iram Gámez
+              {getFullName()}
             </Text>
             <Text color="$textDark500" textAlign="center">
-              Desarrollador Móvil | React Native
+              {userData?.email || email || 'Usuario'}
             </Text>
             <HStack space="sm" alignItems="center">
               <Icon as={MapPin} size="sm" color="$textDark500" />
-              <Text color="$textDark500">Guadalajara, México</Text>
+              <Text color="$textDark500">
+                {userData?.address || 'Dirección no especificada'}
+              </Text>
             </HStack>
+            {userData?.phone && (
+              <Text color="$textDark500">
+                Teléfono: {userData.phone}
+              </Text>
+            )}
           </VStack>
 
           {/* Estadísticas */}
